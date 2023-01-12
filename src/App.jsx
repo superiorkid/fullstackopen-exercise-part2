@@ -1,66 +1,82 @@
-import { useState } from 'react'
-import './App.css'
+import React, {useState, useEffect} from "react";
+import "./App.css";
 import PersonForm from "./components/PersonForm.jsx";
 import Persons from "./components/Persons.jsx";
 import Filter from "./components/Filter.jsx";
+import axios from "axios";
+import {getPersons, postPerson} from './services/persons'
 
 function App() {
-    const [persons, setPersons] = useState([
-        { name: 'Arto Hellas', number: '040-123456', id: 1 },
-        { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
-        { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
-        { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 }
-
-    ])
+    const [persons, setPersons] = useState([]);
     const [newName, setNewName] = useState({
-        id: persons.length + 1,
+        id: new Date(),
         name: "",
-        phone: ""
-    })
-    const [fil, setFilter] = useState("")
+        number: "",
+    });
+    const [fil, setFilter] = useState("");
+
+    useEffect(() => {
+        const getPerson = async () => {
+            await getPersons()
+                .then((response) => {
+                    setPersons(response.data);
+                });
+        };
+
+        getPerson();
+    }, [persons]);
 
     const onChangeHandler = (e) => {
-        const {name, value} = e.target
-        setNewName((prevState) => ({...newName, [name]: value}))
-    }
+        const {name, value} = e.target;
+        setNewName((prevState) => ({...newName, [name]: value}));
+    };
 
     const filterHandler = (data) => {
-        setFilter(data)
-    }
+        setFilter(data);
+    };
 
-    const onSubmitHandler = (e) => {
-        e.preventDefault()
+    const onSubmitHandler = async (e) => {
+        e.preventDefault();
 
-        const isExists = persons.filter((predicate) => predicate.name === newName.name)
+        const isExists = persons.filter(
+            (predicate) => predicate.name === newName.name
+        );
 
         if (isExists.length > 0) {
-            alert(`${newName.name} is already added to phonebook`)
+            alert(`${newName.name} is already added to phonebook`);
         } else {
-            setPersons((prevState) => [...persons, newName])
+            await postPerson(newName)
+                .then((response) => {
+                    alert("data successfully added.");
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
         }
+    };
 
-    }
 
     return (
-      <>
-        <h1>PhoneBook</h1>
-          <Filter onFilterTrigger={filterHandler} />
+        <>
+            <h1>PhoneBook</h1>
+            <Filter onFilterTrigger={filterHandler}/>
 
-          <h2>Add a new</h2>
-          <PersonForm handleSubmit={onSubmitHandler} handleChange={onChangeHandler} />
+            <h2>Add a new</h2>
+            <PersonForm
+                handleSubmit={onSubmitHandler}
+                handleChange={onChangeHandler}
+            />
 
-          <h2>Numbers</h2>
-          {fil ? (
-              persons.filter((predicate) => predicate.name.includes(fil)).map((person,index) => (
-                  <Persons key={person.id} person={person} />
-              ))
-          ) : (
-              persons.map((person, index) => (
-                  <Persons key={person.id} person={person} />
-              ))
-          )}
-      </>
-    )
+            <h2>Numbers</h2>
+            {fil
+                ? persons
+                    .filter((predicate) => predicate.name.includes(fil))
+                    .map((person, index) => <Persons key={person.id} person={person}/>)
+                : persons.map((person, index) => (
+                    <Persons key={person.id} person={person}/>
+                ))}
+        </>
+    );
 }
 
-export default App
+export default App;
